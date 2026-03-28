@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/saintedlama/goarch/analysis/functioncalls"
-	"github.com/saintedlama/goarch/analysis/internaltest"
+	"github.com/saintedlama/goarch/functioncalls"
+	"github.com/saintedlama/goarch/internaltest"
 )
 
 func TestFunctionCalls_FindsExpectedFmtErrorfCalls(t *testing.T) {

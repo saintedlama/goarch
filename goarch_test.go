@@ -1,9 +1,9 @@
-package analysis_test
+package goarch_test
 
 import (
 	"testing"
 
-	"github.com/saintedlama/goarch/analysis/internaltest"
+	"github.com/saintedlama/goarch/internaltest"
 )
 
 func TestLoadWorkspace_LoadsPackagesAndFiles(t *testing.T) {

@@ -3,8 +3,8 @@ package functions_test
 import (
 	"testing"
 
-	"github.com/saintedlama/goarch/analysis/functions"
-	"github.com/saintedlama/goarch/analysis/internaltest"
+	"github.com/saintedlama/goarch/functions"
+	"github.com/saintedlama/goarch/internaltest"
 )
 
 func TestFunctions_MatchBuildsRefsFromPredicates(t *testing.T) {

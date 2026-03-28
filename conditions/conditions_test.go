@@ -3,8 +3,8 @@ package conditions_test
 import (
 	"testing"
 
-	"github.com/saintedlama/goarch/analysis/conditions"
-	"github.com/saintedlama/goarch/analysis/internaltest"
+	"github.com/saintedlama/goarch/conditions"
+	"github.com/saintedlama/goarch/internaltest"
 )
 
 func TestConditions_MatchBuildsRefsFromPredicates(t *testing.T) {

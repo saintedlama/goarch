@@ -3,8 +3,8 @@ package variables_test
 import (
 	"testing"
 
-	"github.com/saintedlama/goarch/analysis/internaltest"
-	"github.com/saintedlama/goarch/analysis/variables"
+	"github.com/saintedlama/goarch/internaltest"
+	"github.com/saintedlama/goarch/variables"
 )
 
 func TestVariables_MatchBuildsRefsFromPredicates(t *testing.T) {

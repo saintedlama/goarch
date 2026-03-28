@@ -1,37 +1,37 @@
-package conditions
+package functioncalls
 
 import (
 	"go/ast"
 
-	"github.com/saintedlama/goarch/analysis/common"
+	"github.com/saintedlama/goarch/common"
 )
 
-// Item represents a conditional control-flow entry.
+// Item represents a function call entry.
 type Item struct {
-	Ref  common.Ref
-	Kind string
-	Node ast.Node
+	Ref    common.Ref
+	Callee string
+	Node   *ast.CallExpr
 }
 
-// MatchFunc is a function type that matches condition entries.
+// MatchFunc is a function type that matches function call entries.
 type MatchFunc func(Item) bool
 
-// Collection stores condition entries and provides convenience query APIs.
+// Collection stores call entries and provides convenience query APIs.
 type Collection struct {
 	items []Item
 }
 
-// All returns all condition entries.
+// All returns all function call entries.
 func (c Collection) All() []Item {
 	return c.items
 }
 
-// Len returns number of condition entries.
+// Len returns number of function call entries.
 func (c Collection) Len() int {
 	return len(c.items)
 }
 
-// Match applies matcher to all condition entries and converts matches into code refs.
+// Match applies matcher to all function call entries and converts matches into code refs.
 func (c Collection) Match(matcher MatchFunc) []common.Ref {
 	if matcher == nil {
 		return nil

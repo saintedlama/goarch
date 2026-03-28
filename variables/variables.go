@@ -1,37 +1,38 @@
-package functioncalls
+package variables
 
 import (
 	"go/ast"
 
-	"github.com/saintedlama/goarch/analysis/common"
+	"github.com/saintedlama/goarch/common"
 )
 
-// Item represents a function call entry.
+// Item represents a variable/constant declaration entry.
 type Item struct {
-	Ref    common.Ref
-	Callee string
-	Node   *ast.CallExpr
+	Ref  common.Ref
+	Name string
+	Kind string
+	Node *ast.Ident
 }
 
-// MatchFunc is a function type that matches function call entries.
+// MatchFunc is a function type that matches variable entries.
 type MatchFunc func(Item) bool
 
-// Collection stores call entries and provides convenience query APIs.
+// Collection stores variable entries and provides convenience query APIs.
 type Collection struct {
 	items []Item
 }
 
-// All returns all function call entries.
+// All returns all variable entries.
 func (c Collection) All() []Item {
 	return c.items
 }
 
-// Len returns number of function call entries.
+// Len returns number of variable entries.
 func (c Collection) Len() int {
 	return len(c.items)
 }
 
-// Match applies matcher to all function call entries and converts matches into code refs.
+// Match applies matcher to all variable entries and converts matches into code refs.
 func (c Collection) Match(matcher MatchFunc) []common.Ref {
 	if matcher == nil {
 		return nil

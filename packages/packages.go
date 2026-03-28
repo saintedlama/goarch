@@ -4,7 +4,7 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/saintedlama/goarch/analysis/common"
+	"github.com/saintedlama/goarch/common"
 
 	toolspackages "golang.org/x/tools/go/packages"
 )

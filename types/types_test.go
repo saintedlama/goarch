@@ -3,8 +3,8 @@ package types_test
 import (
 	"testing"
 
-	"github.com/saintedlama/goarch/analysis/internaltest"
-	"github.com/saintedlama/goarch/analysis/types"
+	"github.com/saintedlama/goarch/internaltest"
+	"github.com/saintedlama/goarch/types"
 )
 
 func TestTypes_MatchBuildsRefsFromPredicates(t *testing.T) {

@@ -1,38 +1,38 @@
-package variables
+package types
 
 import (
 	"go/ast"
 
-	"github.com/saintedlama/goarch/analysis/common"
+	"github.com/saintedlama/goarch/common"
 )
 
-// Item represents a variable/constant declaration entry.
+// Item represents a type declaration entry.
 type Item struct {
 	Ref  common.Ref
 	Name string
 	Kind string
-	Node *ast.Ident
+	Node *ast.TypeSpec
 }
 
-// MatchFunc is a function type that matches variable entries.
+// MatchFunc is a function type that matches type entries.
 type MatchFunc func(Item) bool
 
-// Collection stores variable entries and provides convenience query APIs.
+// Collection stores type entries and provides convenience query APIs.
 type Collection struct {
 	items []Item
 }
 
-// All returns all variable entries.
+// All returns all type entries.
 func (c Collection) All() []Item {
 	return c.items
 }
 
-// Len returns number of variable entries.
+// Len returns number of type entries.
 func (c Collection) Len() int {
 	return len(c.items)
 }
 
-// Match applies matcher to all variable entries and converts matches into code refs.
+// Match applies matcher to all type entries and converts matches into code refs.
 func (c Collection) Match(matcher MatchFunc) []common.Ref {
 	if matcher == nil {
 		return nil
