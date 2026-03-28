@@ -11,7 +11,6 @@ type Workspace struct {
 	*analysis.Workspace
 }
 
-type Finding = analysis.Finding
 type Ref = analysis.Ref
 
 type Package = analysis.Package
@@ -56,7 +55,7 @@ func LoadWorkspace(ctx context.Context, dir string, opts ...LoadWorkspaceOption)
 }
 
 // MatchPackages runs a matcher over all packages and returns generated findings.
-func (workspace *Workspace) MatchPackages(matcher PackageMatcher) []Finding {
+func (workspace *Workspace) MatchPackages(matcher PackageMatcher) []Ref {
 	if workspace == nil || matcher == nil {
 		return nil
 	}
@@ -64,7 +63,7 @@ func (workspace *Workspace) MatchPackages(matcher PackageMatcher) []Finding {
 }
 
 // MatchTypes runs a matcher over all type entries and returns generated findings.
-func (workspace *Workspace) MatchTypes(matcher TypeMatcher) []Finding {
+func (workspace *Workspace) MatchTypes(matcher TypeMatcher) []Ref {
 	if workspace == nil || matcher == nil {
 		return nil
 	}
@@ -72,7 +71,7 @@ func (workspace *Workspace) MatchTypes(matcher TypeMatcher) []Finding {
 }
 
 // MatchFunctions runs a matcher over all function entries and returns generated findings.
-func (workspace *Workspace) MatchFunctions(matcher FunctionMatcher) []Finding {
+func (workspace *Workspace) MatchFunctions(matcher FunctionMatcher) []Ref {
 	if workspace == nil || matcher == nil {
 		return nil
 	}
@@ -80,7 +79,7 @@ func (workspace *Workspace) MatchFunctions(matcher FunctionMatcher) []Finding {
 }
 
 // MatchVariables runs a matcher over all variable entries and returns generated findings.
-func (workspace *Workspace) MatchVariables(matcher VariableMatcher) []Finding {
+func (workspace *Workspace) MatchVariables(matcher VariableMatcher) []Ref {
 	if workspace == nil || matcher == nil {
 		return nil
 	}
@@ -88,7 +87,7 @@ func (workspace *Workspace) MatchVariables(matcher VariableMatcher) []Finding {
 }
 
 // MatchFunctionCalls runs a matcher over all call entries and returns generated findings.
-func (workspace *Workspace) MatchFunctionCalls(matcher FunctionCallMatcher) []Finding {
+func (workspace *Workspace) MatchFunctionCalls(matcher FunctionCallMatcher) []Ref {
 	if workspace == nil || matcher == nil {
 		return nil
 	}
@@ -96,7 +95,7 @@ func (workspace *Workspace) MatchFunctionCalls(matcher FunctionCallMatcher) []Fi
 }
 
 // MatchConditions runs a matcher over all condition entries and returns generated findings.
-func (workspace *Workspace) MatchConditions(matcher ConditionMatcher) []Finding {
+func (workspace *Workspace) MatchConditions(matcher ConditionMatcher) []Ref {
 	if workspace == nil || matcher == nil {
 		return nil
 	}

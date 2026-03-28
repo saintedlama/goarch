@@ -13,15 +13,15 @@ type Item struct {
 	Node   *ast.CallExpr
 }
 
-// Matcher matches function call entries and provides a finding message.
+// Matcher matches function call entries.
 type Matcher interface {
-	MatchFunctionCall(Item) (bool, string)
+	MatchFunctionCall(Item) bool
 }
 
 // MatchFunc adapts a function into a Matcher.
-type MatchFunc func(Item) (bool, string)
+type MatchFunc func(Item) bool
 
-func (f MatchFunc) MatchFunctionCall(i Item) (bool, string) {
+func (f MatchFunc) MatchFunctionCall(i Item) bool {
 	return f(i)
 }
 
@@ -41,21 +41,20 @@ func (c Collection) Len() int {
 }
 
 // Match applies matcher to all function call entries and converts matches into findings.
-func (c Collection) Match(matcher Matcher) []common.Finding {
+func (c Collection) Match(matcher Matcher) []common.Ref {
 	if matcher == nil {
 		return nil
 	}
 
-	var findings []common.Finding
+	var refs []common.Ref
 	for _, item := range c.items {
-		ok, msg := matcher.MatchFunctionCall(item)
-		if !ok {
+		if !matcher.MatchFunctionCall(item) {
 			continue
 		}
-		findings = append(findings, common.FindingFromRef(item.Ref, common.MessageOrDefault(msg, "function call matched")))
+		refs = append(refs, item.Ref)
 	}
 
-	return findings
+	return refs
 }
 
 // Add appends an entry to the collection.

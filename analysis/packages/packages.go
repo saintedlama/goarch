@@ -24,15 +24,15 @@ type Item struct {
 	Errors []toolspackages.Error
 }
 
-// Matcher matches package entries and provides a finding message.
+// Matcher matches package entries.
 type Matcher interface {
-	MatchPackage(Item) (bool, string)
+	MatchPackage(Item) bool
 }
 
 // MatchFunc adapts a function into a Matcher.
-type MatchFunc func(Item) (bool, string)
+type MatchFunc func(Item) bool
 
-func (f MatchFunc) MatchPackage(i Item) (bool, string) {
+func (f MatchFunc) MatchPackage(i Item) bool {
 	return f(i)
 }
 
@@ -52,21 +52,20 @@ func (c Collection) Len() int {
 }
 
 // Match applies matcher to all package entries and converts matches into findings.
-func (c Collection) Match(matcher Matcher) []common.Finding {
+func (c Collection) Match(matcher Matcher) []common.Ref {
 	if matcher == nil {
 		return nil
 	}
 
-	var findings []common.Finding
+	var refs []common.Ref
 	for _, item := range c.items {
-		ok, msg := matcher.MatchPackage(item)
-		if !ok {
+		if !matcher.MatchPackage(item) {
 			continue
 		}
-		findings = append(findings, common.FindingFromRef(packageRef(item), common.MessageOrDefault(msg, "package matched")))
+		refs = append(refs, packageRef(item))
 	}
 
-	return findings
+	return refs
 }
 
 // Add appends an entry to the collection.

@@ -28,7 +28,6 @@ type Workspace struct {
 }
 
 // Top-level aliases for convenient consumption from analysis package.
-type Finding = common.Finding
 type Ref = common.Ref
 
 type Package = packages.Item

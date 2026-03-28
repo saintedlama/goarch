@@ -65,11 +65,11 @@ func TestNoFmtErrorfCalls(t *testing.T) {
   }
 
   findings := workspace.MatchFunctionCalls(
-    goarch.FunctionCallMatchFunc(func(c goarch.FunctionCall) (bool, string) {
+    goarch.FunctionCallMatchFunc(func(c goarch.FunctionCall) bool {
       if c.Callee == "fmt.Errorf" {
-        return true, "fmt.Errorf call is not allowed in this package"
+        return true
       }
-      return false, ""
+      return false
     }),
   )
 
@@ -78,7 +78,7 @@ func TestNoFmtErrorfCalls(t *testing.T) {
   }
 
   for _, f := range findings {
-    t.Errorf("%s:%d:%d %s", f.Ref.Filename, f.Ref.Line, f.Ref.Column, f.Message)
+    t.Errorf("%s:%d:%d package=%s", f.Filename, f.Line, f.Column, f.PackageName)
   }
 }
 ```

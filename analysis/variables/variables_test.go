@@ -10,18 +10,15 @@ import (
 func TestVariables_MatchBuildsFindingsFromPredicates(t *testing.T) {
 	workspace := internaltest.LoadFixtureWorkspace(t, "fixturemod")
 
-	findings := workspace.Variables.Match(variables.MatchFunc(func(v variables.Item) (bool, string) {
-		return v.Name == "GlobalCounter", "variable predicate matched"
+	findings := workspace.Variables.Match(variables.MatchFunc(func(v variables.Item) bool {
+		return v.Name == "GlobalCounter"
 	}))
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 variable finding, got %d", len(findings))
 	}
 
 	for _, f := range findings {
-		if f.Message == "" {
-			t.Fatalf("finding message should not be empty")
-		}
-		if f.Package == "" {
+		if f.PackageName == "" {
 			t.Fatalf("finding package should not be empty")
 		}
 		if f.Line <= 0 {
