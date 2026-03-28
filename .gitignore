@@ -1,0 +1,28 @@
+# Binaries and build outputs
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+bin/
+dist/
+
+# Go workspace and coverage
+coverage.out
+*.coverprofile
+
+# Dependency/vendor mode (optional)
+vendor/
+
+# Logs and temp files
+*.log
+*.tmp
+
+# IDE/editor
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

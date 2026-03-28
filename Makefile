@@ -1,0 +1,13 @@
+.PHONY: lint vet build test-verbose
+
+vet:
+	go vet ./...
+
+fmt:
+	go fmt ./...
+
+build:
+	go build ./...
+
+test-verbose:
+	go test -v ./...
