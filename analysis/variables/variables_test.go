@@ -11,7 +11,7 @@ func TestVariables_MatchBuildsFindingsFromPredicates(t *testing.T) {
 	workspace := internaltest.LoadFixtureWorkspace(t, "fixturemod")
 
 	findings := workspace.Variables.Match(variables.MatchFunc(func(v variables.Item) (bool, string) {
-		return v.Name == "globalCounter", "variable predicate matched"
+		return v.Name == "GlobalCounter", "variable predicate matched"
 	}))
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 variable finding, got %d", len(findings))

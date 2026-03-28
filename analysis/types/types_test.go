@@ -11,7 +11,7 @@ func TestTypes_MatchBuildsFindingsFromPredicates(t *testing.T) {
 	workspace := internaltest.LoadFixtureWorkspace(t, "fixturemod")
 
 	findings := workspace.Types.Match(types.MatchFunc(func(typ types.Item) (bool, string) {
-		return typ.Name == "widget", "type predicate matched"
+		return typ.Name == "Widget", "type predicate matched"
 	}))
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 type finding, got %d", len(findings))

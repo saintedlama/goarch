@@ -11,7 +11,7 @@ func TestFunctions_MatchBuildsFindingsFromPredicates(t *testing.T) {
 	workspace := internaltest.LoadFixtureWorkspace(t, "fixturemod")
 
 	findings := workspace.Functions.Match(functions.MatchFunc(func(fn functions.Item) (bool, string) {
-		return fn.Name == "rootErr", "function predicate matched"
+		return fn.Name == "RootErr", "function predicate matched"
 	}))
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 function finding, got %d", len(findings))
