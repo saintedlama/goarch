@@ -1,4 +1,4 @@
-module goarch
+module github.com/saintedlama/goarch
 
 go 1.25.0
 

@@ -6,53 +6,74 @@ import (
 	"go/ast"
 	"go/token"
 
-	pccommon "goarch/analysis/pointcuts/common"
-	pcconditions "goarch/analysis/pointcuts/conditions"
-	pcfunctioncalls "goarch/analysis/pointcuts/functioncalls"
-	pcfunctions "goarch/analysis/pointcuts/functions"
-	pcpackages "goarch/analysis/pointcuts/packages"
-	pctypes "goarch/analysis/pointcuts/types"
-	pcvariables "goarch/analysis/pointcuts/variables"
+	"github.com/saintedlama/goarch/analysis/common"
+	"github.com/saintedlama/goarch/analysis/conditions"
+	"github.com/saintedlama/goarch/analysis/functioncalls"
+	"github.com/saintedlama/goarch/analysis/functions"
+	"github.com/saintedlama/goarch/analysis/packages"
+	"github.com/saintedlama/goarch/analysis/types"
+	"github.com/saintedlama/goarch/analysis/variables"
 
 	toolspackages "golang.org/x/tools/go/packages"
 )
 
-// ProgramAST is the loaded AST structure for all discovered packages.
-type ProgramAST struct {
-	Packages      pcpackages.Collection
-	Types         pctypes.Collection
-	Functions     pcfunctions.Collection
-	Variables     pcvariables.Collection
-	FunctionCalls pcfunctioncalls.Collection
-	Conditions    pcconditions.Collection
+// Workspace is the loaded code workspace for all discovered packages.
+type Workspace struct {
+	Packages      packages.Collection
+	Types         types.Collection
+	Functions     functions.Collection
+	Variables     variables.Collection
+	FunctionCalls functioncalls.Collection
+	Conditions    conditions.Collection
 }
 
-// Compatibility aliases for consumers using the previous analysis package surface.
-type Finding = pccommon.Finding
-type PointcutRef = pccommon.Ref
+// Top-level aliases for convenient consumption from analysis package.
+type Finding = common.Finding
+type Ref = common.Ref
 
-type PackagePointcuts = pcpackages.Collection
-type PackageAST = pcpackages.Item
-type FileAST = pcpackages.File
+type Package = packages.Item
+type File = packages.File
 
-type TypePointcuts = pctypes.Collection
-type TypePointcut = pctypes.Item
+type Type = types.Item
+type Function = functions.Item
+type Variable = variables.Item
+type FunctionCall = functioncalls.Item
+type Condition = conditions.Item
 
-type FunctionPointcuts = pcfunctions.Collection
-type FunctionPointcut = pcfunctions.Item
+type PackageMatcher = packages.Matcher
+type PackageMatchFunc = packages.MatchFunc
 
-type VariablePointcuts = pcvariables.Collection
-type VariablePointcut = pcvariables.Item
+type TypeMatcher = types.Matcher
+type TypeMatchFunc = types.MatchFunc
 
-type FunctionCallPointcuts = pcfunctioncalls.Collection
-type FunctionCallPointcut = pcfunctioncalls.Item
+type FunctionMatcher = functions.Matcher
+type FunctionMatchFunc = functions.MatchFunc
 
-type ConditionPointcuts = pcconditions.Collection
-type ConditionPointcut = pcconditions.Item
+type VariableMatcher = variables.Matcher
+type VariableMatchFunc = variables.MatchFunc
 
-// LoadProgramAST loads all packages in dir and returns a full AST structure.
-// progress is called with status messages; pass nil to suppress them.
-func LoadProgramAST(ctx context.Context, dir string, progress func(string)) (*ProgramAST, error) {
+type FunctionCallMatcher = functioncalls.Matcher
+type FunctionCallMatchFunc = functioncalls.MatchFunc
+
+type ConditionMatcher = conditions.Matcher
+type ConditionMatchFunc = conditions.MatchFunc
+
+type loadWorkspaceOptions struct {
+	reporter func(string)
+}
+
+// LoadWorkspaceOption configures workspace loading behavior.
+type LoadWorkspaceOption func(*loadWorkspaceOptions)
+
+// WithReporter configures a progress reporter callback.
+func WithReporter(reporter func(string)) LoadWorkspaceOption {
+	return func(opts *loadWorkspaceOptions) {
+		opts.reporter = reporter
+	}
+}
+
+// LoadWorkspace loads all packages in dir and returns a workspace.
+func LoadWorkspace(ctx context.Context, dir string, opts ...LoadWorkspaceOption) (*Workspace, error) {
 	cfg := &toolspackages.Config{
 		Dir: dir,
 		Mode: toolspackages.NeedName | toolspackages.NeedFiles | toolspackages.NeedSyntax |
@@ -60,9 +81,16 @@ func LoadProgramAST(ctx context.Context, dir string, progress func(string)) (*Pr
 		Context: ctx,
 	}
 
+	options := &loadWorkspaceOptions{}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(options)
+		}
+	}
+
 	report := func(msg string) {
-		if progress != nil {
-			progress(msg)
+		if options.reporter != nil {
+			options.reporter(msg)
 		}
 	}
 
@@ -76,11 +104,11 @@ func LoadProgramAST(ctx context.Context, dir string, progress func(string)) (*Pr
 	}
 	report(fmt.Sprintf("Loaded %d package(s)", len(pkgs)))
 
-	program := &ProgramAST{}
+	workspace := &Workspace{}
 	for _, pkg := range pkgs {
 		report(fmt.Sprintf("Analyzing %s...", pkg.ID))
 
-		p := pcpackages.Item{
+		p := packages.Item{
 			ID:     pkg.ID,
 			Name:   pkg.Name,
 			Fset:   pkg.Fset,
@@ -99,27 +127,27 @@ func LoadProgramAST(ctx context.Context, dir string, progress func(string)) (*Pr
 				filename = pkg.GoFiles[i]
 			}
 
-			p.Files = append(p.Files, pcpackages.File{
+			p.Files = append(p.Files, packages.File{
 				Filename: filename,
 				Node:     file,
 			})
 
-			indexFilePointcuts(&program.Types, &program.Functions, &program.Variables, &program.FunctionCalls, &program.Conditions, p, filename, file)
+			indexFileEntries(&workspace.Types, &workspace.Functions, &workspace.Variables, &workspace.FunctionCalls, &workspace.Conditions, p, filename, file)
 		}
 
-		program.Packages.Add(p)
+		workspace.Packages.Add(p)
 	}
 
-	return program, nil
+	return workspace, nil
 }
 
-func indexFilePointcuts(
-	types *pctypes.Collection,
-	functions *pcfunctions.Collection,
-	variables *pcvariables.Collection,
-	functionCalls *pcfunctioncalls.Collection,
-	conditions *pcconditions.Collection,
-	pkg pcpackages.Item,
+func indexFileEntries(
+	typeEntries *types.Collection,
+	functionEntries *functions.Collection,
+	variableEntries *variables.Collection,
+	callEntries *functioncalls.Collection,
+	conditionEntries *conditions.Collection,
+	pkg packages.Item,
 	filename string,
 	file *ast.File,
 ) {
@@ -130,8 +158,8 @@ func indexFilePointcuts(
 	ast.Inspect(file, func(n ast.Node) bool {
 		switch node := n.(type) {
 		case *ast.TypeSpec:
-			types.Add(pctypes.Item{
-				Ref:  newPointcutRef(pkg, filename, node),
+			typeEntries.Add(types.Item{
+				Ref:  newRef(pkg, filename, node),
 				Name: node.Name.Name,
 				Kind: exprKind(node.Type),
 				Node: node,
@@ -142,8 +170,8 @@ func indexFilePointcuts(
 			if node.Recv != nil && len(node.Recv.List) > 0 {
 				receiver = exprText(node.Recv.List[0].Type)
 			}
-			functions.Add(pcfunctions.Item{
-				Ref:      newPointcutRef(pkg, filename, node),
+			functionEntries.Add(functions.Item{
+				Ref:      newRef(pkg, filename, node),
 				Name:     node.Name.Name,
 				Receiver: receiver,
 				Node:     node,
@@ -155,8 +183,8 @@ func indexFilePointcuts(
 				kind = "const"
 			}
 			for _, name := range node.Names {
-				variables.Add(pcvariables.Item{
-					Ref:  newPointcutRef(pkg, filename, name),
+				variableEntries.Add(variables.Item{
+					Ref:  newRef(pkg, filename, name),
 					Name: name.Name,
 					Kind: kind,
 					Node: name,
@@ -164,38 +192,38 @@ func indexFilePointcuts(
 			}
 
 		case *ast.CallExpr:
-			functionCalls.Add(pcfunctioncalls.Item{
-				Ref:    newPointcutRef(pkg, filename, node),
+			callEntries.Add(functioncalls.Item{
+				Ref:    newRef(pkg, filename, node),
 				Callee: calleeName(node.Fun),
 				Node:   node,
 			})
 
 		case *ast.IfStmt:
-			conditions.Add(pcconditions.Item{Ref: newPointcutRef(pkg, filename, node), Kind: "if", Node: node})
+			conditionEntries.Add(conditions.Item{Ref: newRef(pkg, filename, node), Kind: "if", Node: node})
 		case *ast.SwitchStmt:
-			conditions.Add(pcconditions.Item{Ref: newPointcutRef(pkg, filename, node), Kind: "switch", Node: node})
+			conditionEntries.Add(conditions.Item{Ref: newRef(pkg, filename, node), Kind: "switch", Node: node})
 		case *ast.TypeSwitchStmt:
-			conditions.Add(pcconditions.Item{Ref: newPointcutRef(pkg, filename, node), Kind: "type-switch", Node: node})
+			conditionEntries.Add(conditions.Item{Ref: newRef(pkg, filename, node), Kind: "type-switch", Node: node})
 		case *ast.CaseClause:
-			conditions.Add(pcconditions.Item{Ref: newPointcutRef(pkg, filename, node), Kind: "case", Node: node})
+			conditionEntries.Add(conditions.Item{Ref: newRef(pkg, filename, node), Kind: "case", Node: node})
 		case *ast.SelectStmt:
-			conditions.Add(pcconditions.Item{Ref: newPointcutRef(pkg, filename, node), Kind: "select", Node: node})
+			conditionEntries.Add(conditions.Item{Ref: newRef(pkg, filename, node), Kind: "select", Node: node})
 		case *ast.CommClause:
-			conditions.Add(pcconditions.Item{Ref: newPointcutRef(pkg, filename, node), Kind: "comm", Node: node})
+			conditionEntries.Add(conditions.Item{Ref: newRef(pkg, filename, node), Kind: "comm", Node: node})
 		}
 
 		return true
 	})
 }
 
-func newPointcutRef(pkg pcpackages.Item, fallbackFilename string, n ast.Node) pccommon.Ref {
+func newRef(pkg packages.Item, fallbackFilename string, n ast.Node) common.Ref {
 	pos := pkg.Fset.PositionFor(n.Pos(), true)
 	filename := fallbackFilename
 	if pos.Filename != "" {
 		filename = pos.Filename
 	}
 
-	return pccommon.Ref{
+	return common.Ref{
 		PackageID:   pkg.ID,
 		PackageName: pkg.Name,
 		Filename:    filename,

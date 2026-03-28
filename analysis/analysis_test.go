@@ -1,9 +1,13 @@
-package analysis
+package analysis_test
 
-import "testing"
+import (
+	"testing"
 
-func TestLoadProgramAST_LoadsPackagesAndFiles(t *testing.T) {
-	program := mustLoadFixtureProgramAST(t, "fixturemod")
+	"github.com/saintedlama/goarch/analysis/internaltest"
+)
+
+func TestLoadWorkspace_LoadsPackagesAndFiles(t *testing.T) {
+	program := internaltest.LoadFixtureWorkspace(t, "fixturemod")
 
 	if program.Packages.Len() < 2 {
 		t.Fatalf("expected at least 2 packages, got %d", program.Packages.Len())
@@ -27,23 +31,23 @@ func TestLoadProgramAST_LoadsPackagesAndFiles(t *testing.T) {
 	}
 }
 
-func TestLoadProgramAST_BuildsTopLevelPointcuts(t *testing.T) {
-	program := mustLoadFixtureProgramAST(t, "fixturemod")
+func TestLoadWorkspace_BuildsTopLevelCollections(t *testing.T) {
+	program := internaltest.LoadFixtureWorkspace(t, "fixturemod")
 
 	if program.Types.Len() == 0 {
-		t.Fatalf("expected at least one type pointcut")
+		t.Fatalf("expected at least one type entry")
 	}
 	if program.Functions.Len() == 0 {
-		t.Fatalf("expected at least one function pointcut")
+		t.Fatalf("expected at least one function entry")
 	}
 	if program.Variables.Len() == 0 {
-		t.Fatalf("expected at least one variable pointcut")
+		t.Fatalf("expected at least one variable entry")
 	}
 	if program.FunctionCalls.Len() == 0 {
-		t.Fatalf("expected at least one function call pointcut")
+		t.Fatalf("expected at least one function call entry")
 	}
 	if program.Conditions.Len() == 0 {
-		t.Fatalf("expected at least one condition pointcut")
+		t.Fatalf("expected at least one condition entry")
 	}
 
 	var hasIf, hasCase bool

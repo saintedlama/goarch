@@ -1,14 +1,17 @@
-package analysis
+package functioncalls_test
 
 import (
 	"strings"
 	"testing"
+
+	"github.com/saintedlama/goarch/analysis/functioncalls"
+	"github.com/saintedlama/goarch/analysis/internaltest"
 )
 
 func TestFunctionCalls_FindsExpectedFmtErrorfCalls(t *testing.T) {
-	program := mustLoadFixtureProgramAST(t, "fixturemod")
+	workspace := internaltest.LoadFixtureWorkspace(t, "fixturemod")
 
-	findings := program.FunctionCalls.Match(FunctionCallMatchFunc(func(call FunctionCallPointcut) (bool, string) {
+	findings := workspace.FunctionCalls.Match(functioncalls.MatchFunc(func(call functioncalls.Item) (bool, string) {
 		if call.Callee != "fmt.Errorf" {
 			return false, ""
 		}
