@@ -24,17 +24,8 @@ type Item struct {
 	Errors []toolspackages.Error
 }
 
-// Matcher matches package entries.
-type Matcher interface {
-	MatchPackage(Item) bool
-}
-
-// MatchFunc adapts a function into a Matcher.
+// MatchFunc is a function type that matches package entries.
 type MatchFunc func(Item) bool
-
-func (f MatchFunc) MatchPackage(i Item) bool {
-	return f(i)
-}
 
 // Collection stores package entries and provides convenience query APIs.
 type Collection struct {
@@ -52,14 +43,14 @@ func (c Collection) Len() int {
 }
 
 // Match applies matcher to all package entries and converts matches into code refs.
-func (c Collection) Match(matcher Matcher) []common.Ref {
+func (c Collection) Match(matcher MatchFunc) []common.Ref {
 	if matcher == nil {
 		return nil
 	}
 
 	var refs []common.Ref
 	for _, item := range c.items {
-		if !matcher.MatchPackage(item) {
+		if !matcher(item) {
 			continue
 		}
 		refs = append(refs, packageRef(item))

@@ -13,17 +13,8 @@ type Item struct {
 	Node ast.Node
 }
 
-// Matcher matches condition entries.
-type Matcher interface {
-	MatchCondition(Item) bool
-}
-
-// MatchFunc adapts a function into a Matcher.
+// MatchFunc is a function type that matches condition entries.
 type MatchFunc func(Item) bool
-
-func (f MatchFunc) MatchCondition(i Item) bool {
-	return f(i)
-}
 
 // Collection stores condition entries and provides convenience query APIs.
 type Collection struct {
@@ -41,14 +32,14 @@ func (c Collection) Len() int {
 }
 
 // Match applies matcher to all condition entries and converts matches into code refs.
-func (c Collection) Match(matcher Matcher) []common.Ref {
+func (c Collection) Match(matcher MatchFunc) []common.Ref {
 	if matcher == nil {
 		return nil
 	}
 
 	var refs []common.Ref
 	for _, item := range c.items {
-		if !matcher.MatchCondition(item) {
+		if !matcher(item) {
 			continue
 		}
 		refs = append(refs, item.Ref)

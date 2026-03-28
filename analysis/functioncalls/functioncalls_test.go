@@ -11,12 +11,12 @@ import (
 func TestFunctionCalls_FindsExpectedFmtErrorfCalls(t *testing.T) {
 	workspace := internaltest.LoadFixtureWorkspace(t, "fixturemod")
 
-	refs := workspace.FunctionCalls.Match(functioncalls.MatchFunc(func(call functioncalls.Item) bool {
+	refs := workspace.FunctionCalls.Match(func(call functioncalls.Item) bool {
 		if call.Callee != "fmt.Errorf" {
 			return false
 		}
 		return true
-	}))
+	})
 	if len(refs) != 2 {
 		t.Fatalf("expected 2 refs, got %d", len(refs))
 	}

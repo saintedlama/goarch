@@ -10,9 +10,9 @@ import (
 func TestConditions_MatchBuildsRefsFromPredicates(t *testing.T) {
 	workspace := internaltest.LoadFixtureWorkspace(t, "fixturemod")
 
-	refs := workspace.Conditions.Match(conditions.MatchFunc(func(cond conditions.Item) bool {
+	refs := workspace.Conditions.Match(func(cond conditions.Item) bool {
 		return cond.Kind == "if"
-	}))
+	})
 	if len(refs) == 0 {
 		t.Fatalf("expected at least 1 condition ref")
 	}

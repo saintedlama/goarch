@@ -39,22 +39,11 @@ type Variable = variables.Item
 type FunctionCall = functioncalls.Item
 type Condition = conditions.Item
 
-type PackageMatcher = packages.Matcher
 type PackageMatchFunc = packages.MatchFunc
-
-type TypeMatcher = types.Matcher
 type TypeMatchFunc = types.MatchFunc
-
-type FunctionMatcher = functions.Matcher
 type FunctionMatchFunc = functions.MatchFunc
-
-type VariableMatcher = variables.Matcher
 type VariableMatchFunc = variables.MatchFunc
-
-type FunctionCallMatcher = functioncalls.Matcher
 type FunctionCallMatchFunc = functioncalls.MatchFunc
-
-type ConditionMatcher = conditions.Matcher
 type ConditionMatchFunc = conditions.MatchFunc
 
 type loadWorkspaceOptions struct {

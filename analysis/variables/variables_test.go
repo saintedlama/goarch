@@ -10,9 +10,9 @@ import (
 func TestVariables_MatchBuildsRefsFromPredicates(t *testing.T) {
 	workspace := internaltest.LoadFixtureWorkspace(t, "fixturemod")
 
-	refs := workspace.Variables.Match(variables.MatchFunc(func(v variables.Item) bool {
+	refs := workspace.Variables.Match(func(v variables.Item) bool {
 		return v.Name == "GlobalCounter"
-	}))
+	})
 	if len(refs) != 1 {
 		t.Fatalf("expected 1 variable ref, got %d", len(refs))
 	}

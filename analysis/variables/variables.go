@@ -14,17 +14,8 @@ type Item struct {
 	Node *ast.Ident
 }
 
-// Matcher matches variable entries.
-type Matcher interface {
-	MatchVariable(Item) bool
-}
-
-// MatchFunc adapts a function into a Matcher.
+// MatchFunc is a function type that matches variable entries.
 type MatchFunc func(Item) bool
-
-func (f MatchFunc) MatchVariable(i Item) bool {
-	return f(i)
-}
 
 // Collection stores variable entries and provides convenience query APIs.
 type Collection struct {
@@ -42,14 +33,14 @@ func (c Collection) Len() int {
 }
 
 // Match applies matcher to all variable entries and converts matches into code refs.
-func (c Collection) Match(matcher Matcher) []common.Ref {
+func (c Collection) Match(matcher MatchFunc) []common.Ref {
 	if matcher == nil {
 		return nil
 	}
 
 	var refs []common.Ref
 	for _, item := range c.items {
-		if !matcher.MatchVariable(item) {
+		if !matcher(item) {
 			continue
 		}
 		refs = append(refs, item.Ref)

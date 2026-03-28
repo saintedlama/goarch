@@ -10,9 +10,9 @@ import (
 func TestTypes_MatchBuildsRefsFromPredicates(t *testing.T) {
 	workspace := internaltest.LoadFixtureWorkspace(t, "fixturemod")
 
-	refs := workspace.Types.Match(types.MatchFunc(func(typ types.Item) bool {
+	refs := workspace.Types.Match(func(typ types.Item) bool {
 		return typ.Name == "Widget"
-	}))
+	})
 	if len(refs) != 1 {
 		t.Fatalf("expected 1 type ref, got %d", len(refs))
 	}

@@ -10,9 +10,9 @@ import (
 func TestPackages_MatchBuildsRefsFromPredicates(t *testing.T) {
 	workspace := internaltest.LoadFixtureWorkspace(t, "fixturemod")
 
-	refs := workspace.Packages.Match(packages.MatchFunc(func(pkg packages.Item) bool {
+	refs := workspace.Packages.Match(func(pkg packages.Item) bool {
 		return pkg.Name == "main"
-	}))
+	})
 	if len(refs) == 0 {
 		t.Fatalf("expected package refs")
 	}
