@@ -7,7 +7,6 @@ import (
 	"go/token"
 
 	"github.com/saintedlama/goarch/common"
-	"github.com/saintedlama/goarch/conditions"
 	"github.com/saintedlama/goarch/functioncalls"
 	"github.com/saintedlama/goarch/functions"
 	"github.com/saintedlama/goarch/packages"
@@ -24,7 +23,6 @@ type Workspace struct {
 	Functions     functions.Collection
 	Variables     variables.Collection
 	FunctionCalls functioncalls.Collection
-	Conditions    conditions.Collection
 }
 
 // Top-level aliases for convenient consumption from goarch package.
@@ -37,14 +35,12 @@ type Type = types.Item
 type Function = functions.Item
 type Variable = variables.Item
 type FunctionCall = functioncalls.Item
-type Condition = conditions.Item
 
 type PackageMatchFunc = packages.MatchFunc
 type TypeMatchFunc = types.MatchFunc
 type FunctionMatchFunc = functions.MatchFunc
 type VariableMatchFunc = variables.MatchFunc
 type FunctionCallMatchFunc = functioncalls.MatchFunc
-type ConditionMatchFunc = conditions.MatchFunc
 
 type loadWorkspaceOptions struct {
 	reporter func(string)
@@ -97,10 +93,10 @@ func LoadWorkspace(ctx context.Context, dir string, opts ...LoadWorkspaceOption)
 		report(fmt.Sprintf("Analyzing %s...", pkg.ID))
 
 		p := packages.Item{
-			ID:     pkg.ID,
-			Name:   pkg.Name,
-			Fset:   pkg.Fset,
-			Errors: pkg.Errors,
+			ID:      pkg.ID,
+			Name:    pkg.Name,
+			FileSet: pkg.Fset,
+			Errors:  pkg.Errors,
 		}
 
 		for i, file := range pkg.Syntax {
@@ -120,7 +116,7 @@ func LoadWorkspace(ctx context.Context, dir string, opts ...LoadWorkspaceOption)
 				Node:     file,
 			})
 
-			indexFileEntries(&workspace.Types, &workspace.Functions, &workspace.Variables, &workspace.FunctionCalls, &workspace.Conditions, p, filename, file)
+			indexFileEntries(&workspace.Types, &workspace.Functions, &workspace.Variables, &workspace.FunctionCalls, p, filename, file)
 		}
 
 		workspace.Packages.Add(p)
@@ -169,20 +165,11 @@ func (workspace *Workspace) MatchFunctionCalls(matcher FunctionCallMatchFunc) []
 	return workspace.FunctionCalls.Match(matcher)
 }
 
-// MatchConditions runs a matcher over all condition entries and returns generated code refs.
-func (workspace *Workspace) MatchConditions(matcher ConditionMatchFunc) []Ref {
-	if workspace == nil || matcher == nil {
-		return nil
-	}
-	return workspace.Conditions.Match(matcher)
-}
-
 func indexFileEntries(
 	typeEntries *types.Collection,
 	functionEntries *functions.Collection,
 	variableEntries *variables.Collection,
 	callEntries *functioncalls.Collection,
-	conditionEntries *conditions.Collection,
 	pkg packages.Item,
 	filename string,
 	file *ast.File,
@@ -234,18 +221,6 @@ func indexFileEntries(
 				Node:   node,
 			})
 
-		case *ast.IfStmt:
-			conditionEntries.Add(conditions.Item{Ref: newRef(pkg, filename, node), Kind: "if", Node: node})
-		case *ast.SwitchStmt:
-			conditionEntries.Add(conditions.Item{Ref: newRef(pkg, filename, node), Kind: "switch", Node: node})
-		case *ast.TypeSwitchStmt:
-			conditionEntries.Add(conditions.Item{Ref: newRef(pkg, filename, node), Kind: "type-switch", Node: node})
-		case *ast.CaseClause:
-			conditionEntries.Add(conditions.Item{Ref: newRef(pkg, filename, node), Kind: "case", Node: node})
-		case *ast.SelectStmt:
-			conditionEntries.Add(conditions.Item{Ref: newRef(pkg, filename, node), Kind: "select", Node: node})
-		case *ast.CommClause:
-			conditionEntries.Add(conditions.Item{Ref: newRef(pkg, filename, node), Kind: "comm", Node: node})
 		}
 
 		return true
@@ -253,7 +228,7 @@ func indexFileEntries(
 }
 
 func newRef(pkg packages.Item, fallbackFilename string, n ast.Node) common.Ref {
-	pos := pkg.Fset.PositionFor(n.Pos(), true)
+	pos := pkg.FileSet.PositionFor(n.Pos(), true)
 	filename := fallbackFilename
 	if pos.Filename != "" {
 		filename = pos.Filename

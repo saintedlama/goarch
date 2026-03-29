@@ -17,7 +17,7 @@ func TestLoadWorkspace_LoadsPackagesAndFiles(t *testing.T) {
 		if pkg.ID == "" {
 			t.Fatalf("package ID should not be empty")
 		}
-		if pkg.Fset == nil {
+		if pkg.FileSet == nil {
 			t.Fatalf("package %q has nil file set", pkg.ID)
 		}
 		if len(pkg.Files) == 0 {
@@ -45,25 +45,5 @@ func TestLoadWorkspace_BuildsTopLevelCollections(t *testing.T) {
 	}
 	if program.FunctionCalls.Len() == 0 {
 		t.Fatalf("expected at least one function call entry")
-	}
-	if program.Conditions.Len() == 0 {
-		t.Fatalf("expected at least one condition entry")
-	}
-
-	var hasIf, hasCase bool
-	for _, c := range program.Conditions.All() {
-		if c.Kind == "if" {
-			hasIf = true
-		}
-		if c.Kind == "case" {
-			hasCase = true
-		}
-	}
-
-	if !hasIf {
-		t.Fatalf("expected to index an if condition")
-	}
-	if !hasCase {
-		t.Fatalf("expected to index a case condition")
 	}
 }

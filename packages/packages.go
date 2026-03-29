@@ -17,11 +17,11 @@ type File struct {
 
 // Item represents one loaded package entry.
 type Item struct {
-	ID     string
-	Name   string
-	Fset   *token.FileSet
-	Files  []File
-	Errors []toolspackages.Error
+	ID      string
+	Name    string
+	FileSet *token.FileSet
+	Files   []File
+	Errors  []toolspackages.Error
 }
 
 // MatchFunc is a function type that matches package entries.
@@ -71,8 +71,8 @@ func packageRef(item Item) common.Ref {
 		ref.Filename = item.Files[0].Filename
 	}
 
-	if item.Fset != nil && len(item.Files) > 0 && item.Files[0].Node != nil {
-		pos := item.Fset.PositionFor(item.Files[0].Node.Name.Pos(), true)
+	if item.FileSet != nil && len(item.Files) > 0 && item.Files[0].Node != nil {
+		pos := item.FileSet.PositionFor(item.Files[0].Node.Name.Pos(), true)
 		if pos.Filename != "" {
 			ref.Filename = pos.Filename
 		}
