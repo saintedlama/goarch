@@ -13,6 +13,7 @@ import (
 // collectionPackages are the sub-packages that each define the
 // Item / Collection / MatchFunc triad and must follow the collection pattern.
 var collectionPackages = []string{
+	"github.com/saintedlama/goarch/files",
 	"github.com/saintedlama/goarch/functions",
 	"github.com/saintedlama/goarch/functioncalls",
 	"github.com/saintedlama/goarch/packages",

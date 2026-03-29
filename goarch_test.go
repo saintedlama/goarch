@@ -26,6 +26,7 @@ func TestLoadWorkspace_LoadsPackagesAndFiles(t *testing.T) {
 func TestLoadWorkspace_BuildsTopLevelCollections(t *testing.T) {
 	program := internaltest.LoadFixtureWorkspace(t, "fixturemod")
 
+	assert.Greater(t, program.Files.Len(), 0, "expected at least one file entry")
 	assert.Greater(t, program.Types.Len(), 0, "expected at least one type entry")
 	assert.Greater(t, program.Functions.Len(), 0, "expected at least one function entry")
 	assert.Greater(t, program.Variables.Len(), 0, "expected at least one variable entry")

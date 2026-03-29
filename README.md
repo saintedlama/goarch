@@ -13,11 +13,11 @@ Experimental. APIs and behavior may change as ideas are tested.
 After loading a module, `goarch` builds top-level collections for:
 
 - Packages
+- Files
 - Types
 - Functions
 - Variables
 - Function calls
-- Conditions (`if`, `switch`, `select`, `case`, etc.)
 
 Each collection supports a fluent `Match(...)` API that returns code refs with source references.
 
@@ -33,11 +33,11 @@ go get github.com/saintedlama/goarch
 - `WithReporter(func(string)) LoadWorkspaceOption`
 - Workspace matcher methods:
   - `workspace.MatchPackages(...)`
+  - `workspace.MatchFiles(...)`
   - `workspace.MatchTypes(...)`
   - `workspace.MatchFunctions(...)`
   - `workspace.MatchVariables(...)`
   - `workspace.MatchFunctionCalls(...)`
-  - `workspace.MatchConditions(...)`
 
 ## Quick start
 

@@ -7,6 +7,7 @@ import (
 	"go/token"
 
 	"github.com/saintedlama/goarch/common"
+	"github.com/saintedlama/goarch/files"
 	"github.com/saintedlama/goarch/functioncalls"
 	"github.com/saintedlama/goarch/functions"
 	"github.com/saintedlama/goarch/packages"
@@ -19,6 +20,7 @@ import (
 // Workspace is the loaded code workspace for all discovered packages.
 type Workspace struct {
 	Packages      packages.Collection
+	Files         files.Collection
 	Types         types.Collection
 	Functions     functions.Collection
 	Variables     variables.Collection
@@ -29,7 +31,8 @@ type Workspace struct {
 type Ref = common.Ref
 
 type Package = packages.Item
-type File = packages.File
+type PackageFile = packages.File
+type File = files.Item
 
 type Type = types.Item
 type Function = functions.Item
@@ -37,6 +40,7 @@ type Variable = variables.Item
 type FunctionCall = functioncalls.Item
 
 type PackageMatchFunc = packages.MatchFunc
+type FileMatchFunc = files.MatchFunc
 type TypeMatchFunc = types.MatchFunc
 type FunctionMatchFunc = functions.MatchFunc
 type VariableMatchFunc = variables.MatchFunc
@@ -116,6 +120,12 @@ func LoadWorkspace(ctx context.Context, dir string, opts ...LoadWorkspaceOption)
 				Node:     file,
 			})
 
+			workspace.Files.Add(files.Item{
+				Ref:      newRef(p, filename, file),
+				Filename: filename,
+				Node:     file,
+			})
+
 			indexFileEntries(&workspace.Types, &workspace.Functions, &workspace.Variables, &workspace.FunctionCalls, p, filename, file)
 		}
 
@@ -131,6 +141,14 @@ func (workspace *Workspace) MatchPackages(matcher PackageMatchFunc) []Ref {
 		return nil
 	}
 	return workspace.Packages.Match(matcher)
+}
+
+// MatchFiles runs a matcher over all file entries and returns generated code refs.
+func (workspace *Workspace) MatchFiles(matcher FileMatchFunc) []Ref {
+	if workspace == nil || matcher == nil {
+		return nil
+	}
+	return workspace.Files.Match(matcher)
 }
 
 // MatchTypes runs a matcher over all type entries and returns generated code refs.
