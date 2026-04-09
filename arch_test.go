@@ -2,12 +2,12 @@ package archscout_test
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
 
 	"github.com/saintedlama/archscout"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,11 +36,14 @@ func loadWorkspace(t *testing.T) *archscout.Workspace {
 func TestArch_AllCollectionPackagesExist(t *testing.T) {
 	ws := loadWorkspace(t)
 
-	for _, want := range collectionPackages {
-		refs := ws.MatchPackages(func(pkg archscout.Package) bool {
-			return pkg.ID == want
+	for _, pkg := range collectionPackages {
+		t.Run(pkg, func(t *testing.T) {
+			archscout.Rule(fmt.Sprintf("package %q should exist in workspace", pkg)).
+				Packages().
+				InPackage(pkg).
+				ShouldExist().
+				Test(t, ws)
 		})
-		assert.NotEmpty(t, refs, "expected package %q not found in workspace", want)
 	}
 }
 
@@ -49,15 +52,29 @@ func TestArch_AllCollectionPackagesExist(t *testing.T) {
 func TestArch_CollectionPackagesDefineRequiredTypes(t *testing.T) {
 	ws := loadWorkspace(t)
 
-	required := []string{"Item", "Collection", "MatchFunc"}
+	type typeExpectation struct {
+		pkg      string
+		typeName string
+	}
 
+	var expectations []typeExpectation
 	for _, pkg := range collectionPackages {
-		for _, typeName := range required {
-			refs := ws.MatchTypes(func(typ archscout.Type) bool {
-				return typ.Ref.PackageID == pkg && typ.Name == typeName
-			})
-			assert.NotEmpty(t, refs, "package %q is missing required exported type %q", pkg, typeName)
+		for _, typeName := range []string{"Item", "Collection", "MatchFunc"} {
+			expectations = append(expectations, typeExpectation{pkg: pkg, typeName: typeName})
 		}
+	}
+
+	for _, tc := range expectations {
+		t.Run(tc.pkg+"/"+tc.typeName, func(t *testing.T) {
+			archscout.Rule(fmt.Sprintf("package %q should define type %q", tc.pkg, tc.typeName)).
+				Types().
+				InPackage(tc.pkg).
+				ShouldExist().
+				Match(func(typ archscout.Type) bool {
+					return typ.Name == tc.typeName
+				}).
+				Test(t, ws)
+		})
 	}
 }
 
@@ -66,17 +83,29 @@ func TestArch_CollectionPackagesDefineRequiredTypes(t *testing.T) {
 func TestArch_CollectionPackagesDefineRequiredMethods(t *testing.T) {
 	ws := loadWorkspace(t)
 
-	required := []string{"All", "Len", "Match"}
+	type methodExpectation struct {
+		pkg    string
+		method string
+	}
 
+	var expectations []methodExpectation
 	for _, pkg := range collectionPackages {
-		for _, method := range required {
-			refs := ws.MatchFunctions(func(fn archscout.Function) bool {
-				return fn.Ref.PackageID == pkg &&
-					fn.Name == method &&
-					strings.Contains(fn.Receiver, "Collection")
-			})
-			assert.NotEmpty(t, refs, "package %q Collection is missing required method %q", pkg, method)
+		for _, method := range []string{"All", "Len", "Match"} {
+			expectations = append(expectations, methodExpectation{pkg: pkg, method: method})
 		}
+	}
+
+	for _, tc := range expectations {
+		t.Run(tc.pkg+"/"+tc.method, func(t *testing.T) {
+			archscout.Rule(fmt.Sprintf("package %q Collection should define method %q", tc.pkg, tc.method)).
+				Functions().
+				InPackage(tc.pkg).
+				ShouldExist().
+				Match(func(fn archscout.Function) bool {
+					return fn.Name == tc.method && strings.Contains(fn.Receiver, "Collection")
+				}).
+				Test(t, ws)
+		})
 	}
 }
 
@@ -86,7 +115,7 @@ func TestArch_LibraryCodeDoesNotCallPanicOrExit(t *testing.T) {
 	ws := loadWorkspace(t)
 
 	forbidden := []string{"panic", "os.Exit"}
-	rule := archscout.Rule("panic and os.Exit forbidden in library code").
+	rule := archscout.Rule("library code should not panic or os.Exit").
 		FunctionCalls().
 		InPackage("github.com/saintedlama/archscout/...").
 		NotInPackage("github.com/saintedlama/archscout/internal/...").

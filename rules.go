@@ -75,9 +75,10 @@ func (b RuleBuilder) Dependencies() *DependencyRule {
 
 // PackageRule evaluates predicates against package entries.
 type PackageRule struct {
-	name    string
-	filters ruleFilters
-	matcher PackageMatchFunc
+	name        string
+	filters     ruleFilters
+	matcher     PackageMatchFunc
+	shouldExist bool
 }
 
 // FileRule evaluates predicates against file entries.
@@ -89,16 +90,18 @@ type FileRule struct {
 
 // TypeRule evaluates predicates against type entries.
 type TypeRule struct {
-	name    string
-	filters ruleFilters
-	matcher TypeMatchFunc
+	name        string
+	filters     ruleFilters
+	matcher     TypeMatchFunc
+	shouldExist bool
 }
 
 // FunctionRule evaluates predicates against function entries.
 type FunctionRule struct {
-	name    string
-	filters ruleFilters
-	matcher FunctionMatchFunc
+	name        string
+	filters     ruleFilters
+	matcher     FunctionMatchFunc
+	shouldExist bool
 }
 
 // VariableRule evaluates predicates against variable entries.
@@ -152,23 +155,35 @@ func (r *PackageRule) Match(matcher PackageMatchFunc) *PackageRule {
 	return r
 }
 
+func (r *PackageRule) ShouldExist() *PackageRule {
+	r.shouldExist = true
+	return r
+}
+
 func (r *PackageRule) Test(t testing.TB, ws *Workspace) {
 	t.Helper()
 	refs, err := r.Evaluate(ws)
-	failRuleIfNeeded(t, r.name, refs, err)
+	if r.shouldExist {
+		failRuleIfShouldExistButDoesnt(t, r.name, refs, err)
+	} else {
+		failRuleIfNeeded(t, r.name, refs, err)
+	}
 }
 
 func (r *PackageRule) Evaluate(ws *Workspace) (Refs, error) {
 	if ws == nil {
 		return nil, fmt.Errorf("workspace is nil")
 	}
-	if r.matcher == nil {
+	if r.matcher == nil && !r.shouldExist {
 		return nil, fmt.Errorf("no matcher configured")
 	}
 
 	collection := ws.Packages
 	collection = applyPackageFilters(collection, r.filters)
 
+	if r.matcher == nil {
+		return collection.Match(func(Package) bool { return true }), nil
+	}
 	return collection.Match(r.matcher), nil
 }
 
@@ -242,23 +257,35 @@ func (r *TypeRule) Match(matcher TypeMatchFunc) *TypeRule {
 	return r
 }
 
+func (r *TypeRule) ShouldExist() *TypeRule {
+	r.shouldExist = true
+	return r
+}
+
 func (r *TypeRule) Test(t testing.TB, ws *Workspace) {
 	t.Helper()
 	refs, err := r.Evaluate(ws)
-	failRuleIfNeeded(t, r.name, refs, err)
+	if r.shouldExist {
+		failRuleIfShouldExistButDoesnt(t, r.name, refs, err)
+	} else {
+		failRuleIfNeeded(t, r.name, refs, err)
+	}
 }
 
 func (r *TypeRule) Evaluate(ws *Workspace) (Refs, error) {
 	if ws == nil {
 		return nil, fmt.Errorf("workspace is nil")
 	}
-	if r.matcher == nil {
+	if r.matcher == nil && !r.shouldExist {
 		return nil, fmt.Errorf("no matcher configured")
 	}
 
 	collection := ws.Types
 	collection = applyTypeFilters(collection, r.filters)
 
+	if r.matcher == nil {
+		return collection.Match(func(Type) bool { return true }), nil
+	}
 	return collection.Match(r.matcher), nil
 }
 
@@ -287,23 +314,35 @@ func (r *FunctionRule) Match(matcher FunctionMatchFunc) *FunctionRule {
 	return r
 }
 
+func (r *FunctionRule) ShouldExist() *FunctionRule {
+	r.shouldExist = true
+	return r
+}
+
 func (r *FunctionRule) Test(t testing.TB, ws *Workspace) {
 	t.Helper()
 	refs, err := r.Evaluate(ws)
-	failRuleIfNeeded(t, r.name, refs, err)
+	if r.shouldExist {
+		failRuleIfShouldExistButDoesnt(t, r.name, refs, err)
+	} else {
+		failRuleIfNeeded(t, r.name, refs, err)
+	}
 }
 
 func (r *FunctionRule) Evaluate(ws *Workspace) (Refs, error) {
 	if ws == nil {
 		return nil, fmt.Errorf("workspace is nil")
 	}
-	if r.matcher == nil {
+	if r.matcher == nil && !r.shouldExist {
 		return nil, fmt.Errorf("no matcher configured")
 	}
 
 	collection := ws.Functions
 	collection = applyFunctionFilters(collection, r.filters)
 
+	if r.matcher == nil {
+		return collection.Match(func(Function) bool { return true }), nil
+	}
 	return collection.Match(r.matcher), nil
 }
 
@@ -441,6 +480,12 @@ func (r *DependencyRule) IsThirdParty() *DependencyRule {
 
 func (r *DependencyRule) DependOn(patterns ...string) *DependencyRule {
 	r.dependsOn = append(r.dependsOn, patterns...)
+	return r
+}
+
+// DependsOn filters to dependencies matching the single provided pattern.
+func (r *DependencyRule) DependsOn(pattern string) *DependencyRule {
+	r.dependsOn = append(r.dependsOn, pattern)
 	return r
 }
 
@@ -636,4 +681,14 @@ func failRuleIfNeeded(t testing.TB, name string, refs common.Refs, err error) {
 		len(refs),
 		refs.Format(WithRefPackage(), WithRefKind()),
 	)
+}
+
+func failRuleIfShouldExistButDoesnt(t testing.TB, name string, refs common.Refs, err error) {
+	if err != nil {
+		t.Fatalf("rule %q misconfigured: %v", name, err)
+	}
+	if len(refs) > 0 {
+		return
+	}
+	t.Fatalf("rule %q not satisfied: expected at least one match but found none", name)
 }

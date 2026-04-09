@@ -70,6 +70,28 @@ type VariableMatchFunc = variables.MatchFunc
 type FunctionCallMatchFunc = functioncalls.MatchFunc
 type DependencyMatchFunc = dependencies.MatchFunc
 
+// Module is a Go module path that can generate fully-qualified package patterns
+// without repeated string concatenation.
+//
+//	mod := archscout.Module("github.com/myapp/myapp")
+//	mod.Pkg("ui/common/...")           // "github.com/myapp/myapp/ui/common/..."
+//	mod.Pkgs("audio/...", "player/...") // []string{"github.com/myapp/myapp/audio/...", ...}
+type Module string
+
+// Pkg returns the fully-qualified package pattern for the given sub-path.
+func (m Module) Pkg(subpath string) string {
+	return string(m) + "/" + subpath
+}
+
+// Pkgs returns fully-qualified package patterns for each supplied sub-path.
+func (m Module) Pkgs(subpaths ...string) []string {
+	result := make([]string, len(subpaths))
+	for i, p := range subpaths {
+		result[i] = string(m) + "/" + p
+	}
+	return result
+}
+
 // DefaultRefFormatOptions returns the default ref formatting configuration.
 func DefaultRefFormatOptions() common.RefFormatOptions {
 	return common.DefaultRefFormatOptions()
