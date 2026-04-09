@@ -1,5 +1,7 @@
 package common
 
+import "unicode"
+
 // RefKind describes the kind of source entry a ref points at.
 type RefKind string
 
@@ -22,4 +24,13 @@ type Ref struct {
 	Column      int
 	Kind        RefKind
 	Match       string
+}
+
+// IsExportedName reports whether name is an exported Go identifier
+// (starts with an uppercase Unicode letter).
+func IsExportedName(name string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	return unicode.IsUpper([]rune(name)[0])
 }

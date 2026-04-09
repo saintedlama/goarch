@@ -2,6 +2,7 @@ package types
 
 import (
 	"go/ast"
+	"regexp"
 
 	"github.com/saintedlama/archscout/common"
 )
@@ -107,6 +108,50 @@ func (c Collection) InTest() Collection {
 // NotInTest is an alias for IsNotTest kept for backward compatibility.
 func (c Collection) NotInTest() Collection {
 	return c.IsNotTest()
+}
+
+// IsExported returns a filtered collection containing only exported types
+// (names starting with an uppercase letter).
+func (c Collection) IsExported() Collection {
+	filtered := make([]Item, 0, len(c.items))
+	for _, item := range c.items {
+		if !common.IsExportedName(item.Name) {
+			continue
+		}
+		filtered = append(filtered, item)
+	}
+	return Collection{items: filtered}
+}
+
+// IsUnexported returns a filtered collection containing only unexported types
+// (names starting with a lowercase letter).
+func (c Collection) IsUnexported() Collection {
+	filtered := make([]Item, 0, len(c.items))
+	for _, item := range c.items {
+		if common.IsExportedName(item.Name) {
+			continue
+		}
+		filtered = append(filtered, item)
+	}
+	return Collection{items: filtered}
+}
+
+// NameMatches returns a filtered collection containing only items whose name satisfies fn.
+func (c Collection) NameMatches(fn func(string) bool) Collection {
+	filtered := make([]Item, 0, len(c.items))
+	for _, item := range c.items {
+		if !fn(item.Name) {
+			continue
+		}
+		filtered = append(filtered, item)
+	}
+	return Collection{items: filtered}
+}
+
+// NameMatchesRegex returns a filtered collection containing only items whose name
+// matches the regular expression. Panics if the pattern is not valid.
+func (c Collection) NameMatchesRegex(pattern string) Collection {
+	return c.NameMatches(regexp.MustCompile(pattern).MatchString)
 }
 
 // Match applies matcher to all type entries and converts matches into code refs.

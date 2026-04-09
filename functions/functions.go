@@ -2,6 +2,8 @@ package functions
 
 import (
 	"go/ast"
+	"regexp"
+	"strings"
 
 	"github.com/saintedlama/archscout/common"
 )
@@ -107,6 +109,90 @@ func (c Collection) InTest() Collection {
 // NotInTest is an alias for IsNotTest kept for backward compatibility.
 func (c Collection) NotInTest() Collection {
 	return c.IsNotTest()
+}
+
+// IsExported returns a filtered collection containing only exported functions and methods
+// (names starting with an uppercase letter).
+func (c Collection) IsExported() Collection {
+	filtered := make([]Item, 0, len(c.items))
+	for _, item := range c.items {
+		if !common.IsExportedName(item.Name) {
+			continue
+		}
+		filtered = append(filtered, item)
+	}
+	return Collection{items: filtered}
+}
+
+// IsUnexported returns a filtered collection containing only unexported functions and methods
+// (names starting with a lowercase letter).
+func (c Collection) IsUnexported() Collection {
+	filtered := make([]Item, 0, len(c.items))
+	for _, item := range c.items {
+		if common.IsExportedName(item.Name) {
+			continue
+		}
+		filtered = append(filtered, item)
+	}
+	return Collection{items: filtered}
+}
+
+// IsMethod returns a filtered collection containing only method declarations
+// (those with a non-empty receiver).
+func (c Collection) IsMethod() Collection {
+	filtered := make([]Item, 0, len(c.items))
+	for _, item := range c.items {
+		if item.Receiver == "" {
+			continue
+		}
+		filtered = append(filtered, item)
+	}
+	return Collection{items: filtered}
+}
+
+// IsFunction returns a filtered collection containing only free-function declarations
+// (those without a receiver).
+func (c Collection) IsFunction() Collection {
+	filtered := make([]Item, 0, len(c.items))
+	for _, item := range c.items {
+		if item.Receiver != "" {
+			continue
+		}
+		filtered = append(filtered, item)
+	}
+	return Collection{items: filtered}
+}
+
+// HasReceiver returns a filtered collection containing only methods whose receiver
+// type contains pattern. For example, HasReceiver("Service") matches both
+// "Service" and "*Service".
+func (c Collection) HasReceiver(pattern string) Collection {
+	filtered := make([]Item, 0, len(c.items))
+	for _, item := range c.items {
+		if !strings.Contains(item.Receiver, pattern) {
+			continue
+		}
+		filtered = append(filtered, item)
+	}
+	return Collection{items: filtered}
+}
+
+// NameMatches returns a filtered collection containing only items whose name satisfies fn.
+func (c Collection) NameMatches(fn func(string) bool) Collection {
+	filtered := make([]Item, 0, len(c.items))
+	for _, item := range c.items {
+		if !fn(item.Name) {
+			continue
+		}
+		filtered = append(filtered, item)
+	}
+	return Collection{items: filtered}
+}
+
+// NameMatchesRegex returns a filtered collection containing only items whose name
+// matches the regular expression. Panics if the pattern is not valid.
+func (c Collection) NameMatchesRegex(pattern string) Collection {
+	return c.NameMatches(regexp.MustCompile(pattern).MatchString)
 }
 
 // Match applies matcher to all function entries and converts matches into code refs.

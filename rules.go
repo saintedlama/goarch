@@ -2,6 +2,7 @@ package archscout
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/saintedlama/archscout/common"
@@ -94,21 +95,29 @@ type TypeRule struct {
 	filters     ruleFilters
 	matcher     TypeMatchFunc
 	shouldExist bool
+	isExported  *bool
+	nameFunc    func(string) bool
 }
 
 // FunctionRule evaluates predicates against function entries.
 type FunctionRule struct {
-	name        string
-	filters     ruleFilters
-	matcher     FunctionMatchFunc
-	shouldExist bool
+	name            string
+	filters         ruleFilters
+	matcher         FunctionMatchFunc
+	shouldExist     bool
+	isExported      *bool
+	nameFunc        func(string) bool
+	isMethod        *bool
+	receiverPattern string
 }
 
 // VariableRule evaluates predicates against variable entries.
 type VariableRule struct {
-	name    string
-	filters ruleFilters
-	matcher VariableMatchFunc
+	name       string
+	filters    ruleFilters
+	matcher    VariableMatchFunc
+	isExported *bool
+	nameFunc   func(string) bool
 }
 
 // FunctionCallRule evaluates predicates against function call entries.
@@ -257,6 +266,33 @@ func (r *TypeRule) Match(matcher TypeMatchFunc) *TypeRule {
 	return r
 }
 
+// IsExported filters to exported types (names starting with an uppercase letter).
+func (r *TypeRule) IsExported() *TypeRule {
+	v := true
+	r.isExported = &v
+	return r
+}
+
+// IsUnexported filters to unexported types (names starting with a lowercase letter).
+func (r *TypeRule) IsUnexported() *TypeRule {
+	v := false
+	r.isExported = &v
+	return r
+}
+
+// NameMatches filters to types whose name satisfies fn.
+func (r *TypeRule) NameMatches(fn func(string) bool) *TypeRule {
+	r.nameFunc = fn
+	return r
+}
+
+// NameMatchesRegex filters to types whose name matches the regular expression.
+// Panics if the pattern is not valid.
+func (r *TypeRule) NameMatchesRegex(pattern string) *TypeRule {
+	r.nameFunc = regexp.MustCompile(pattern).MatchString
+	return r
+}
+
 func (r *TypeRule) ShouldExist() *TypeRule {
 	r.shouldExist = true
 	return r
@@ -276,15 +312,25 @@ func (r *TypeRule) Evaluate(ws *Workspace) (Refs, error) {
 	if ws == nil {
 		return nil, fmt.Errorf("workspace is nil")
 	}
-	if r.matcher == nil && !r.shouldExist {
+	if r.matcher == nil && !r.shouldExist && r.nameFunc == nil && r.isExported == nil {
 		return nil, fmt.Errorf("no matcher configured")
 	}
 
 	collection := ws.Types
 	collection = applyTypeFilters(collection, r.filters)
+	if r.isExported != nil {
+		if *r.isExported {
+			collection = collection.IsExported()
+		} else {
+			collection = collection.IsUnexported()
+		}
+	}
+	if r.nameFunc != nil {
+		collection = collection.NameMatches(r.nameFunc)
+	}
 
 	if r.matcher == nil {
-		return collection.Match(func(Type) bool { return true }), nil
+		return collection.Match(func(types.Item) bool { return true }), nil
 	}
 	return collection.Match(r.matcher), nil
 }
@@ -314,6 +360,54 @@ func (r *FunctionRule) Match(matcher FunctionMatchFunc) *FunctionRule {
 	return r
 }
 
+// IsExported filters to exported functions and methods (names starting with an uppercase letter).
+func (r *FunctionRule) IsExported() *FunctionRule {
+	v := true
+	r.isExported = &v
+	return r
+}
+
+// IsUnexported filters to unexported functions and methods (names starting with a lowercase letter).
+func (r *FunctionRule) IsUnexported() *FunctionRule {
+	v := false
+	r.isExported = &v
+	return r
+}
+
+// IsMethod filters to method declarations (those with a receiver).
+func (r *FunctionRule) IsMethod() *FunctionRule {
+	v := true
+	r.isMethod = &v
+	return r
+}
+
+// IsFunction filters to free-function declarations (those without a receiver).
+func (r *FunctionRule) IsFunction() *FunctionRule {
+	v := false
+	r.isMethod = &v
+	return r
+}
+
+// HasReceiver filters to methods whose receiver type contains pattern.
+// For example, HasReceiver("Service") matches both "Service" and "*Service".
+func (r *FunctionRule) HasReceiver(pattern string) *FunctionRule {
+	r.receiverPattern = pattern
+	return r
+}
+
+// NameMatches filters to functions whose name satisfies fn.
+func (r *FunctionRule) NameMatches(fn func(string) bool) *FunctionRule {
+	r.nameFunc = fn
+	return r
+}
+
+// NameMatchesRegex filters to functions whose name matches the regular expression.
+// Panics if the pattern is not valid.
+func (r *FunctionRule) NameMatchesRegex(pattern string) *FunctionRule {
+	r.nameFunc = regexp.MustCompile(pattern).MatchString
+	return r
+}
+
 func (r *FunctionRule) ShouldExist() *FunctionRule {
 	r.shouldExist = true
 	return r
@@ -333,15 +427,36 @@ func (r *FunctionRule) Evaluate(ws *Workspace) (Refs, error) {
 	if ws == nil {
 		return nil, fmt.Errorf("workspace is nil")
 	}
-	if r.matcher == nil && !r.shouldExist {
+	hasDiscriminatingFilter := r.nameFunc != nil || r.isExported != nil || r.isMethod != nil || r.receiverPattern != ""
+	if r.matcher == nil && !r.shouldExist && !hasDiscriminatingFilter {
 		return nil, fmt.Errorf("no matcher configured")
 	}
 
 	collection := ws.Functions
 	collection = applyFunctionFilters(collection, r.filters)
+	if r.isExported != nil {
+		if *r.isExported {
+			collection = collection.IsExported()
+		} else {
+			collection = collection.IsUnexported()
+		}
+	}
+	if r.isMethod != nil {
+		if *r.isMethod {
+			collection = collection.IsMethod()
+		} else {
+			collection = collection.IsFunction()
+		}
+	}
+	if r.receiverPattern != "" {
+		collection = collection.HasReceiver(r.receiverPattern)
+	}
+	if r.nameFunc != nil {
+		collection = collection.NameMatches(r.nameFunc)
+	}
 
 	if r.matcher == nil {
-		return collection.Match(func(Function) bool { return true }), nil
+		return collection.Match(func(functions.Item) bool { return true }), nil
 	}
 	return collection.Match(r.matcher), nil
 }
@@ -371,6 +486,33 @@ func (r *VariableRule) Match(matcher VariableMatchFunc) *VariableRule {
 	return r
 }
 
+// IsExported filters to exported variables and constants (names starting with an uppercase letter).
+func (r *VariableRule) IsExported() *VariableRule {
+	v := true
+	r.isExported = &v
+	return r
+}
+
+// IsUnexported filters to unexported variables and constants (names starting with a lowercase letter).
+func (r *VariableRule) IsUnexported() *VariableRule {
+	v := false
+	r.isExported = &v
+	return r
+}
+
+// NameMatches filters to variables whose name satisfies fn.
+func (r *VariableRule) NameMatches(fn func(string) bool) *VariableRule {
+	r.nameFunc = fn
+	return r
+}
+
+// NameMatchesRegex filters to variables whose name matches the regular expression.
+// Panics if the pattern is not valid.
+func (r *VariableRule) NameMatchesRegex(pattern string) *VariableRule {
+	r.nameFunc = regexp.MustCompile(pattern).MatchString
+	return r
+}
+
 func (r *VariableRule) Test(t testing.TB, ws *Workspace) {
 	t.Helper()
 	refs, err := r.Evaluate(ws)
@@ -381,13 +523,26 @@ func (r *VariableRule) Evaluate(ws *Workspace) (Refs, error) {
 	if ws == nil {
 		return nil, fmt.Errorf("workspace is nil")
 	}
-	if r.matcher == nil {
+	if r.matcher == nil && r.nameFunc == nil && r.isExported == nil {
 		return nil, fmt.Errorf("no matcher configured")
 	}
 
 	collection := ws.Variables
 	collection = applyVariableFilters(collection, r.filters)
+	if r.isExported != nil {
+		if *r.isExported {
+			collection = collection.IsExported()
+		} else {
+			collection = collection.IsUnexported()
+		}
+	}
+	if r.nameFunc != nil {
+		collection = collection.NameMatches(r.nameFunc)
+	}
 
+	if r.matcher == nil {
+		return collection.Match(func(variables.Item) bool { return true }), nil
+	}
 	return collection.Match(r.matcher), nil
 }
 
