@@ -107,3 +107,60 @@ func TestDependencies_Tree_GroupsByImportPathHierarchy(t *testing.T) {
 	assert.Equal(t, "otherpkg", someOrgNode.Children[0].Name)
 	assert.Equal(t, "somepkg", someOrgNode.Children[1].Name)
 }
+
+func makeExplorationCollection() dependencies.Collection {
+	return dependencies.NewCollection([]dependencies.Item{
+		{
+			Ref:        common.Ref{PackageID: "myapp/ui/tracker"},
+			ImportPath: "myapp/domain",
+		},
+		{
+			Ref:        common.Ref{PackageID: "myapp/ui/tracker"},
+			ImportPath: "myapp/audio",
+		},
+		{
+			Ref:        common.Ref{PackageID: "myapp/ui/synth"},
+			ImportPath: "myapp/domain",
+		},
+		{
+			Ref:        common.Ref{PackageID: "myapp/application"},
+			ImportPath: "myapp/domain",
+		},
+	})
+}
+
+func TestDependencies_UniqueTargets_ReturnsSortedDeduplicatedImportPaths(t *testing.T) {
+	c := makeExplorationCollection()
+
+	targets := c.UniqueTargets()
+
+	assert.Equal(t, []string{"myapp/audio", "myapp/domain"}, targets)
+}
+
+func TestDependencies_UniqueSourcePackages_ReturnsSortedDeduplicatedPackageIDs(t *testing.T) {
+	c := makeExplorationCollection()
+
+	sources := c.UniqueSourcePackages()
+
+	assert.Equal(t, []string{"myapp/application", "myapp/ui/synth", "myapp/ui/tracker"}, sources)
+}
+
+func TestDependencies_GroupBySourcePackage_PartitionsIntoPerPackageCollections(t *testing.T) {
+	c := makeExplorationCollection()
+
+	groups := c.GroupBySourcePackage()
+
+	require.Len(t, groups, 3)
+	assert.Equal(t, []string{"myapp/audio", "myapp/domain"}, groups["myapp/ui/tracker"].UniqueTargets())
+	assert.Equal(t, []string{"myapp/domain"}, groups["myapp/ui/synth"].UniqueTargets())
+	assert.Equal(t, []string{"myapp/domain"}, groups["myapp/application"].UniqueTargets())
+}
+
+func TestDependencies_GroupBySourcePackage_CombinesWithDependOnForReverseQuery(t *testing.T) {
+	c := makeExplorationCollection()
+
+	// Who imports myapp/domain?
+	sources := c.DependOn("myapp/domain").UniqueSourcePackages()
+
+	assert.Equal(t, []string{"myapp/application", "myapp/ui/synth", "myapp/ui/tracker"}, sources)
+}

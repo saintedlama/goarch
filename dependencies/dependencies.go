@@ -302,3 +302,60 @@ func (c Collection) Match(matcher MatchFunc) common.Refs {
 
 	return refs
 }
+
+// UniqueTargets returns a sorted, deduplicated slice of all import paths in the collection.
+//
+// Useful for exploring what a set of packages reaches:
+//
+//	ws.Dependencies.InPackage(mod.Pkg("ui/...")).IsNotTest().IsWithinWorkspace().UniqueTargets()
+func (c Collection) UniqueTargets() []string {
+	seen := make(map[string]struct{}, len(c.items))
+	for _, item := range c.items {
+		seen[item.ImportPath] = struct{}{}
+	}
+	result := make([]string, 0, len(seen))
+	for p := range seen {
+		result = append(result, p)
+	}
+	sort.Strings(result)
+	return result
+}
+
+// UniqueSourcePackages returns a sorted, deduplicated slice of all source package IDs
+// in the collection.
+//
+// Combined with DependOn it answers the reverse question — who imports a given package:
+//
+//	ws.Dependencies.DependOn(mod.Pkg("domain/...")).IsNotTest().UniqueSourcePackages()
+func (c Collection) UniqueSourcePackages() []string {
+	seen := make(map[string]struct{}, len(c.items))
+	for _, item := range c.items {
+		seen[item.Ref.PackageID] = struct{}{}
+	}
+	result := make([]string, 0, len(seen))
+	for p := range seen {
+		result = append(result, p)
+	}
+	sort.Strings(result)
+	return result
+}
+
+// GroupBySourcePackage partitions the collection into one sub-collection per source
+// package. The returned map key is the package ID.
+//
+// Useful for printing a full dependency map:
+//
+//	for pkg, deps := range ws.Dependencies.IsNotTest().IsWithinWorkspace().GroupBySourcePackage() {
+//	    fmt.Printf("%s → %v\n", pkg, deps.UniqueTargets())
+//	}
+func (c Collection) GroupBySourcePackage() map[string]Collection {
+	groups := make(map[string][]Item)
+	for _, item := range c.items {
+		groups[item.Ref.PackageID] = append(groups[item.Ref.PackageID], item)
+	}
+	result := make(map[string]Collection, len(groups))
+	for pkg, items := range groups {
+		result[pkg] = Collection{items: items}
+	}
+	return result
+}
